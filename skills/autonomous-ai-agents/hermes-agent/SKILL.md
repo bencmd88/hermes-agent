@@ -42,6 +42,21 @@ curl -fsSL https://raw.githubusercontent.com/NousResearch/hermes-agent/main/scri
 
 This installs uv, Python 3.11, clones the repo, sets up the venv, and launches an interactive setup wizard to configure your API provider and model. See the [GitHub repo](https://github.com/NousResearch/hermes-agent) for details.
 
+## Repo-Wide Install/Optimization Requests
+
+When the user asks for something broad like "go through all files, ensure everything is installed, and fully optimized," run an explicit verification workflow instead of making vague claims:
+
+1. **Install/check dependencies** with the repo's documented setup command.
+2. **Run tests before changes** to capture pre-existing failures.
+3. **Make minimal, evidence-based improvements** only where there is a concrete issue.
+4. **Re-run targeted/full validation** and report what changed vs. what was pre-existing.
+
+Example one-shot command:
+
+```
+terminal(command="hermes chat -q 'Audit this repository setup: verify dependencies are installed, run baseline tests, make only minimal justified optimizations, rerun validation, and summarize pre-existing vs new issues with exact files changed.'", timeout=600)
+```
+
 ## Resuming Previous Sessions
 
 Resume a prior CLI session instead of starting fresh. Useful for continuing long tasks across process restarts:
