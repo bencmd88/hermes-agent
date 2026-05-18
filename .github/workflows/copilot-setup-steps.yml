@@ -1,0 +1,91 @@
+name: "Copilot Setup Steps"
+
+# Automatically run when changed and allow manual testing via the Actions tab.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+  pull_request:
+    paths:
+      - .github/workflows/copilot-setup-steps.yml
+
+jobs:
+  # The job MUST be called `copilot-setup-steps` to be picked up by Copilot.
+  copilot-setup-steps:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      # -----------------------------------------------------------------------
+      # 1. Checkout — include submodules (mini-swe-agent, tinker-atropos)
+      # -----------------------------------------------------------------------
+      - name: Checkout code (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      # -----------------------------------------------------------------------
+      # 2. Python — install uv and provision Python 3.11
+      # -----------------------------------------------------------------------
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python 3.11
+        run: uv python install 3.11
+
+      # -----------------------------------------------------------------------
+      # 3. Python virtual environment + all project dependencies
+      #    Uses the [all,dev] extras so every optional feature is available.
+      # -----------------------------------------------------------------------
+      - name: Create virtual environment
+        run: uv venv .venv --python 3.11
+
+      - name: Install hermes-agent (all extras + dev)
+        run: |
+          source .venv/bin/activate
+          uv pip install -e ".[all,dev]"
+
+      # -----------------------------------------------------------------------
+      # 4. Submodule packages
+      #    mini-swe-agent  — terminal tool backend
+      #    tinker-atropos  — RL training backend
+      # -----------------------------------------------------------------------
+      - name: Install mini-swe-agent submodule
+        run: |
+          source .venv/bin/activate
+          if [ -f "mini-swe-agent/pyproject.toml" ]; then
+            uv pip install -e "./mini-swe-agent"
+          else
+            echo "mini-swe-agent not found; skipping"
+          fi
+
+      - name: Install tinker-atropos submodule
+        run: |
+          source .venv/bin/activate
+          if [ -f "tinker-atropos/pyproject.toml" ]; then
+            uv pip install -e "./tinker-atropos"
+          else
+            echo "tinker-atropos not found; skipping"
+          fi
+
+      # -----------------------------------------------------------------------
+      # 5. Node.js + npm dependencies (agent-browser, etc.)
+      # -----------------------------------------------------------------------
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      # -----------------------------------------------------------------------
+      # 6. System tools
+      #    ripgrep — used by file search tools as a fast grep backend
+      # -----------------------------------------------------------------------
+      - name: Install ripgrep
+        run: sudo apt-get install -y ripgrep
