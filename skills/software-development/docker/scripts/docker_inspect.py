@@ -156,8 +156,17 @@ def format_report(summary: dict, record_type: str) -> str:
             lines.append("  Environment:")
             for env in summary["environment"]:
                 key = env.split("=", 1)[0]
-                # Mask values that look like secrets
-                if any(s in key.upper() for s in ("SECRET", "PASSWORD", "TOKEN", "KEY", "PASS")):
+                # Mask values whose name ends with a secret-related word (last
+                # "_"-separated component). Checking only the suffix avoids false
+                # positives like KEY_TYPE or SECRET_MODE where the sensitive word
+                # is a prefix rather than describing the value itself.
+                _SENSITIVE_SUFFIXES = {
+                    "SECRET", "PASSWORD", "PASS", "PASSWD", "PWD",
+                    "TOKEN", "KEY", "APIKEY", "AUTH",
+                    "CREDENTIAL", "CREDENTIALS",
+                }
+                last_part = key.upper().rsplit("_", 1)[-1]
+                if last_part in _SENSITIVE_SUFFIXES:
                     lines.append(f"    {key}=*** (masked)")
                 else:
                     lines.append(f"    {env}")
